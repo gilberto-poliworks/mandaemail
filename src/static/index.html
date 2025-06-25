@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Contato com Parlamentares</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            padding: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        
+        .section:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+        }
+        
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            background: #f0f4ff;
+            border-color: #5a6fd8;
+        }
+        
+        .upload-area.dragover {
+            background: #e3f2fd;
+            border-color: #2196f3;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .upload-icon {
+            font-size: 3em;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .checkbox-group {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            background: white;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 5px;
+            border-radius: 5px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .checkbox-item:hover {
+            background-color: #f0f4ff;
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+        
+        .status-area {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .email-preview {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .filters {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📧 Sistema de Contato com Parlamentares</h1>
+            <p>Envie mensagens personalizadas para deputados e senadores de forma simples e eficiente</p>
+        </div>
+        
+        <div class="main-content">
+            <!-- Seção de Upload de Planilhas -->
+            <div class="section">
+                <h2>📁 Importar Dados dos Parlamentares</h2>
+                <div class="upload-area" onclick="document.getElementById('file-input').click()">
+                    <div class="upload-icon">📄</div>
+                    <h3>Clique aqui ou arraste uma planilha</h3>
+                    <p>Formatos suportados: .xls, .xlsx, .csv</p>
+                    <p>Planilhas oficiais da Câmara dos Deputados e Senado Federal</p>
+                </div>
+                <input type="file" id="file-input" class="file-input" accept=".xls,.xlsx,.csv">
+                <div class="status-area hidden" id="upload-status">
+                    <p><strong>Status do Upload:</strong></p>
+                    <div id="upload-message"></div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="upload-progress"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Seção de Filtros -->
+            <div class="section hidden" id="filters-section">
+                <h2>🔍 Filtrar Parlamentares</h2>
+                <div class="filters">
+                    <div class="form-group">
+                        <label for="filter-name">Nome:</label>
+                        <input type="text" id="filter-name" class="form-control" placeholder="Digite o nome do parlamentar">
+                    </div>
+                    <div class="form-group">
+                        <label for="filter-party">Partido:</label>
+                        <select id="filter-party" class="form-control">
+                            <option value="">Todos os partidos</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filter-state">Estado:</label>
+                        <select id="filter-state" class="form-control">
+                            <option value="">Todos os estados</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filter-position">Cargo:</label>
+                        <select id="filter-position" class="form-control">
+                            <option value="">Todos os cargos</option>
+                            <option value="deputado">Deputado</option>
+                            <option value="senador">Senador</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button class="btn" onclick="applyFilters()">Aplicar Filtros</button>
+                <button class="btn btn-secondary" onclick="clearFilters()">Limpar Filtros</button>
+                
+                <div class="checkbox-group" id="parliamentarians-list">
+                    <div style="text-align: center; padding: 20px; color: #666;">
+                        Carregue uma planilha para ver a lista de parlamentares
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <button class="btn btn-secondary" onclick="selectAll()">Selecionar Todos</button>
+                    <button class="btn btn-secondary" onclick="clearSelection()">Limpar Seleção</button>
+                    <span id="selection-count" style="margin-left: 15px; font-weight: bold;">0 selecionados</span>
+                </div>
+            </div>
+            
+            <!-- Seção de Composição do E-mail -->
+            <div class="section hidden" id="email-section">
+                <h2>✉️ Compor Mensagem</h2>
+                <div class="form-group">
+                    <label for="email-subject">Assunto:</label>
+                    <input type="text" id="email-subject" class="form-control" placeholder="Digite o assunto do e-mail">
+                </div>
+                <div class="form-group">
+                    <label for="email-message">Mensagem:</label>
+                    <textarea id="email-message" class="form-control" placeholder="Digite sua mensagem aqui. Use {nome} para incluir o nome do parlamentar automaticamente."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="sender-name">Seu Nome:</label>
+                    <input type="text" id="sender-name" class="form-control" placeholder="Digite seu nome completo">
+                </div>
+                <div class="form-group">
+                    <label for="sender-email">Seu E-mail:</label>
+                    <input type="email" id="sender-email" class="form-control" placeholder="Digite seu e-mail">
+                </div>
+                <div class="form-group">
+                    <label for="sender-password">Senha do E-mail:</label>
+                    <input type="password" id="sender-password" class="form-control" placeholder="Digite a senha do seu e-mail">
+                    <small style="color: #666; font-size: 0.9em;">Necessário para autenticação SMTP</small>
+                </div>
+                
+                <button class="btn" onclick="previewEmail()">Visualizar E-mail</button>
+                <button class="btn" onclick="sendEmails()" id="send-btn">Enviar E-mails</button>
+                
+                <div class="email-preview hidden" id="email-preview">
+                    <h3>Prévia do E-mail:</h3>
+                    <div id="preview-content"></div>
+                </div>
+            </div>
+            
+            <!-- Seção de Envio -->
+            <div class="section hidden" id="sending-section">
+                <h2>📤 Status do Envio</h2>
+                <div class="status-area">
+                    <p><strong>Progresso do Envio:</strong></p>
+                    <div id="sending-status"></div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="sending-progress"></div>
+                    </div>
+                    <div id="sending-details"></div>
+                </div>
+            </div>
+            
+            <!-- Seção de Histórico -->
+            <div class="section">
+                <h2>📊 Histórico de Envios</h2>
+                <div id="history-list">
+                    <p style="text-align: center; color: #666; padding: 20px;">Nenhum envio realizado ainda</p>
+                </div>
+                <button class="btn btn-secondary" onclick="loadHistory()">Atualizar Histórico</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Variáveis globais
+        let parliamentarians = [];
+        let filteredParliamentarians = [];
+        let selectedParliamentarians = [];
+        
+        // Configuração da área de upload
+        const uploadArea = document.querySelector('.upload-area');
+        const fileInput = document.getElementById('file-input');
+        
+        // Eventos de drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileUpload(files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+        
+        // Função para lidar com upload de arquivo
+        async function handleFileUpload(file) {
+            const statusArea = document.getElementById('upload-status');
+            const messageDiv = document.getElementById('upload-message');
+            const progressBar = document.getElementById('upload-progress');
+            
+            statusArea.classList.remove('hidden');
+            messageDiv.innerHTML = '<div class="alert alert-info">Processando arquivo...</div>';
+            progressBar.style.width = '30%';
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/upload-spreadsheet', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    parliamentarians = result.data;
+                    filteredParliamentarians = [...parliamentarians];
+                    
+                    messageDiv.innerHTML = `<div class="alert alert-success">Arquivo processado com sucesso! ${parliamentarians.length} parlamentares carregados.</div>`;
+                    progressBar.style.width = '100%';
+                    
+                    populateFilters();
+                    displayParliamentarians();
+                    showSection('filters-section');
+                    showSection('email-section');
+                } else {
+                    throw new Error(result.message || 'Erro ao processar arquivo');
+                }
+            } catch (error) {
+                messageDiv.innerHTML = `<div class="alert alert-error">Erro: ${error.message}</div>`;
+                progressBar.style.width = '0%';
+            }
+        }
+        
+        // Função para popular os filtros
+        function populateFilters() {
+            const parties = [...new Set(parliamentarians.map(p => p.partido).filter(Boolean))].sort();
+            const states = [...new Set(parliamentarians.map(p => p.uf).filter(Boolean))].sort();
+            
+            const partySelect = document.getElementById('filter-party');
+            const stateSelect = document.getElementById('filter-state');
+            
+            partySelect.innerHTML = '<option value="">Todos os partidos</option>';
+            parties.forEach(party => {
+                partySelect.innerHTML += `<option value="${party}">${party}</option>`;
+            });
+            
+            stateSelect.innerHTML = '<option value="">Todos os estados</option>';
+            states.forEach(state => {
+                stateSelect.innerHTML += `<option value="${state}">${state}</option>`;
+            });
+        }
+        
+        // Função para aplicar filtros
+        function applyFilters() {
+            const nameFilter = document.getElementById('filter-name').value.toLowerCase();
+            const partyFilter = document.getElementById('filter-party').value;
+            const stateFilter = document.getElementById('filter-state').value;
+            const positionFilter = document.getElementById('filter-position').value;
+            
+            filteredParliamentarians = parliamentarians.filter(p => {
+                const matchesName = !nameFilter || p.nome.toLowerCase().includes(nameFilter);
+                const matchesParty = !partyFilter || p.partido === partyFilter;
+                const matchesState = !stateFilter || p.uf === stateFilter;
+                const matchesPosition = !positionFilter || 
+                    (positionFilter === 'deputado' && p.cargo === 'Deputado') ||
+                    (positionFilter === 'senador' && p.cargo === 'Senador');
+                
+                return matchesName && matchesParty && matchesState && matchesPosition;
+            });
+            
+            displayParliamentarians();
+        }
+        
+        // Função para limpar filtros
+        function clearFilters() {
+            document.getElementById('filter-name').value = '';
+            document.getElementById('filter-party').value = '';
+            document.getElementById('filter-state').value = '';
+            document.getElementById('filter-position').value = '';
+            
+            filteredParliamentarians = [...parliamentarians];
+            displayParliamentarians();
+        }
+        
+        // Função para exibir parlamentares
+        function displayParliamentarians() {
+            const listDiv = document.getElementById('parliamentarians-list');
+            
+            if (filteredParliamentarians.length === 0) {
+                listDiv.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">Nenhum parlamentar encontrado com os filtros aplicados</div>';
+                return;
+            }
+            
+            listDiv.innerHTML = filteredParliamentarians.map((p, index) => `
+                <div class="checkbox-item">
+                    <input type="checkbox" id="parl-${index}" value="${index}" onchange="updateSelection()">
+                    <label for="parl-${index}">
+                        <strong>${p.nome}</strong> - ${p.partido}/${p.uf} 
+                        ${p.email ? '✉️' : '❌'}
+                    </label>
+                </div>
+            `).join('');
+            
+            updateSelectionCount();
+        }
+        
+        // Função para selecionar todos
+        function selectAll() {
+            const checkboxes = document.querySelectorAll('#parliamentarians-list input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = true);
+            updateSelection();
+        }
+        
+        // Função para limpar seleção
+        function clearSelection() {
+            const checkboxes = document.querySelectorAll('#parliamentarians-list input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = false);
+            updateSelection();
+        }
+        
+        // Função para atualizar seleção
+        function updateSelection() {
+            const checkboxes = document.querySelectorAll('#parliamentarians-list input[type="checkbox"]:checked');
+            selectedParliamentarians = Array.from(checkboxes).map(cb => 
+                filteredParliamentarians[parseInt(cb.value)]
+            );
+            updateSelectionCount();
+        }
+        
+        // Função para atualizar contador de seleção
+        function updateSelectionCount() {
+            document.getElementById('selection-count').textContent = `${selectedParliamentarians.length} selecionados`;
+        }
+        
+        // Função para visualizar e-mail
+        function previewEmail() {
+            const subject = document.getElementById('email-subject').value;
+            const message = document.getElementById('email-message').value;
+            const senderName = document.getElementById('sender-name').value;
+            
+            if (!subject || !message || !senderName) {
+                alert('Por favor, preencha todos os campos obrigatórios.');
+                return;
+            }
+            
+            if (selectedParliamentarians.length === 0) {
+                alert('Por favor, selecione pelo menos um parlamentar.');
+                return;
+            }
+            
+            const previewDiv = document.getElementById('email-preview');
+            const contentDiv = document.getElementById('preview-content');
+            
+            const sampleParliamentarian = selectedParliamentarians[0];
+            const personalizedMessage = message.replace(/{nome}/g, sampleParliamentarian.nome);
+            
+            contentDiv.innerHTML = `
+                <p><strong>Para:</strong> ${sampleParliamentarian.nome} &lt;${sampleParliamentarian.email}&gt;</p>
+                <p><strong>Assunto:</strong> ${subject}</p>
+                <hr>
+                <div style="white-space: pre-wrap;">${personalizedMessage}</div>
+                <hr>
+                <p><em>Atenciosamente,<br>${senderName}</em></p>
+                <p style="font-size: 0.9em; color: #666;">
+                    Este e-mail será enviado para ${selectedParliamentarians.length} parlamentar(es) selecionado(s).
+                </p>
+            `;
+            
+            previewDiv.classList.remove('hidden');
+        }
+        
+        // Função para enviar e-mails
+        async function sendEmails() {
+            const subject = document.getElementById('email-subject').value;
+            const message = document.getElementById('email-message').value;
+            const senderName = document.getElementById('sender-name').value;
+            const senderEmail = document.getElementById('sender-email').value;
+            const senderPassword = document.getElementById('sender-password').value;
+            
+            if (!subject || !message || !senderName || !senderEmail || !senderPassword) {
+                alert('Por favor, preencha todos os campos obrigatórios.');
+                return;
+            }
+            
+            if (selectedParliamentarians.length === 0) {
+                alert('Por favor, selecione pelo menos um parlamentar.');
+                return;
+            }
+            
+            const validParliamentarians = selectedParliamentarians.filter(p => p.email);
+            if (validParliamentarians.length === 0) {
+                alert('Nenhum dos parlamentares selecionados possui e-mail válido.');
+                return;
+            }
+            
+            if (!confirm(`Deseja enviar e-mails para ${validParliamentarians.length} parlamentar(es)?`)) {
+                return;
+            }
+            
+            showSection('sending-section');
+            
+            const sendingStatus = document.getElementById('sending-status');
+            const sendingProgress = document.getElementById('sending-progress');
+            const sendingDetails = document.getElementById('sending-details');
+            const sendBtn = document.getElementById('send-btn');
+            
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Enviando...';
+            
+            try {
+                const response = await fetch('/api/send-emails', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        subject,
+                        message,
+                        sender_name: senderName,
+                        sender_email: senderEmail,
+                        sender_password: senderPassword,
+                        recipients: validParliamentarians
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    sendingStatus.innerHTML = '<div class="alert alert-success">E-mails enviados com sucesso!</div>';
+                    sendingProgress.style.width = '100%';
+                    sendingDetails.innerHTML = `
+                        <p><strong>Resumo do Envio:</strong></p>
+                        <p>✅ Enviados: ${result.sent}</p>
+                        <p>❌ Falhas: ${result.failed}</p>
+                        <p>📧 Total: ${result.total}</p>
+                    `;
+                    
+                    // Limpar formulário
+                    document.getElementById('email-subject').value = '';
+                    document.getElementById('email-message').value = '';
+                    clearSelection();
+                    
+                    loadHistory();
+                } else {
+                    throw new Error(result.message || 'Erro ao enviar e-mails');
+                }
+            } catch (error) {
+                sendingStatus.innerHTML = `<div class="alert alert-error">Erro: ${error.message}</div>`;
+                sendingProgress.style.width = '0%';
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Enviar E-mails';
+            }
+        }
+        
+        // Função para carregar histórico
+        async function loadHistory() {
+            try {
+                const response = await fetch('/api/email-history');
+                const result = await response.json();
+                
+                const historyDiv = document.getElementById('history-list');
+                
+                if (result.length === 0) {
+                    historyDiv.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">Nenhum envio realizado ainda</p>';
+                    return;
+                }
+                
+                historyDiv.innerHTML = result.map(item => `
+                    <div style="border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; margin-bottom: 10px; background: white;">
+                        <p><strong>Data:</strong> ${new Date(item.date).toLocaleString('pt-BR')}</p>
+                        <p><strong>Assunto:</strong> ${item.subject}</p>
+                        <p><strong>Destinatários:</strong> ${item.recipients_count}</p>
+                        <p><strong>Status:</strong> ${item.sent} enviados, ${item.failed} falhas</p>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Erro ao carregar histórico:', error);
+            }
+        }
+        
+        // Função para mostrar seção
+        function showSection(sectionId) {
+            document.getElementById(sectionId).classList.remove('hidden');
+        }
+        
+        // Carregar histórico ao inicializar
+        document.addEventListener('DOMContentLoaded', () => {
+            loadHistory();
+        });
+    </script>
+</body>
+</html>
+

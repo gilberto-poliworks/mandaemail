@@ -2,3 +2,7 @@ venv/
 *.db
 pycache/
 *.targz
+__pycache/
+*.tar.gz
+*.log
+*.swp

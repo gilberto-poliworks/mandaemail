@@ -7,7 +7,7 @@ import io
 import sqlite3
 from datetime import datetime
 import os
-
+st.write("DEBUG: Aplicação iniciada.")
 # Configuração da página
 st.set_page_config(
     page_title="Sistema de Contato com Parlamentares",
@@ -15,7 +15,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
+st.write("DEBUG: Função main() iniciada.")
 # CSS customizado
 st.markdown("""
 <style>
@@ -52,7 +52,7 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-
+st.write("DEBUG: Cabeçalho renderizado")
 # Funções auxiliares
 def get_smtp_config(email):
     """Retorna configuração SMTP baseada no provedor de e-mail"""
@@ -127,9 +127,11 @@ def process_spreadsheet(file):
         return None
 
 def init_database():
+    st.write("DEBUG: Iniciando base de dados.")
     """Inicializa banco de dados SQLite"""
     conn = sqlite3.connect("email_history.db")
     cursor = conn.cursor()
+    st.write("DEBUG: Conexão com banco estabelecida")
     
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS email_history (

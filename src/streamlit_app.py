@@ -15,6 +15,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+st.write("Versão 1.0.1 - teste de indexação")
 
 # CSS customizado
 st.markdown("""
@@ -211,33 +212,33 @@ def send_emails(recipients, subject, message, sender_name, sender_email, sender_
     {sender_name}
     {sender_email}
     """
-                    
-                    msg.attach(MIMEText(body, "plain", "utf-8"))
-                    
-                    # Enviar
-                    server.send_message(msg)
-                    sent_count += 1
-                    
-                    # Atualizar progresso
-                    progress = (i + 1) / len(recipients)
-                    progress_bar.progress(progress)
-                    status_text.text(f"Enviando... {i + 1}/{len(recipients)}")
-                    
-                except Exception as e:
-                    failed_count += 1
-                    st.warning(f"Erro ao enviar para {recipient.get("email", "")}: {str(e)}")
-            
-            server.quit()
-            
-            # Salvar no histórico
-            save_email_history(subject, message, sender_name, sender_email, 
-                              len(recipients), sent_count, failed_count)
-            
-            return sent_count, failed_count
-            
-        except Exception as e:
-            st.error(f"Erro na configuração do e-mail: {str(e)}")
-            return 0, len(recipients)
+                
+                msg.attach(MIMEText(body, "plain", "utf-8"))
+                
+                # Enviar
+                server.send_message(msg)
+                sent_count += 1
+                
+                # Atualizar progresso
+                progress = (i + 1) / len(recipients)
+                progress_bar.progress(progress)
+                status_text.text(f"Enviando... {i + 1}/{len(recipients)}")
+                
+            except Exception as e:
+                failed_count += 1
+                st.warning(f"Erro ao enviar para {recipient.get("email", "")}: {str(e)}")
+        
+        server.quit()
+        
+        # Salvar no histórico
+        save_email_history(subject, message, sender_name, sender_email, 
+                          len(recipients), sent_count, failed_count)
+        
+        return sent_count, failed_count
+        
+    except Exception as e:
+        st.error(f"Erro na configuração do e-mail: {str(e)}")
+        return 0, len(recipients)
 
 # Inicializar banco de dados
 init_database()
@@ -408,5 +409,222 @@ def enviar_emails_page():
                                 recipients_with_email = selected_df[emails_validos].to_dict("records")
                                 
                                 with st.spinner("Enviando e-mails..."):
-                             
-(Content truncated due to size limit. Use line ranges to read in chunks)
+                                    sent, failed = send_emails(
+                                        recipients_with_email, subject, message, 
+                                        sender_name, sender_email, sender_password
+                                    )
+                                
+                                if sent > 0:
+                                    st.markdown(f"""
+                                    <div class="success-box">
+                                    <h4>✅ Envio Concluído!</h4>
+                                    <ul>
+                                    <li><strong>Enviados:</strong> {sent}</li>
+                                    <li><strong>Falhas:</strong> {failed}</li>
+                                    <li><strong>Total:</strong> {sent + failed}</li>
+                                    </ul>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                else:
+                                    st.error("❌ Nenhum e-mail foi enviado. Verifique suas credenciais e configurações.")
+                    
+                    else:
+                        st.info("👆 Selecione pelo menos um parlamentar para continuar.")
+                
+                else:
+                    st.warning("⚠️ Nenhum parlamentar encontrado com os filtros aplicados. Tente ajustar os critérios de busca.")
+        
+        else:
+            st.info("👆 Faça upload de uma planilha para começar.")
+            
+            st.markdown("""
+            <div class="feature-box">
+            <h4>📋 Onde obter as planilhas oficiais:</h4>
+            <ul>
+            <li><strong>Câmara dos Deputados:</strong> <a href="https://www.camara.leg.br/internet/deputado/deputado.xls" target="_blank">deputado.xls</a></li>
+            <li><strong>Senado Federal:</strong> Dados disponíveis em <a href="https://www12.senado.leg.br/dados-abertos" target="_blank">Dados Abertos do Senado</a></li>
+            </ul>
+            </div>
+            """, unsafe_allow_html=True)
+
+def historico_page():
+    st.header("📊 Histórico de Envios")
+    
+    history_df = get_email_history()
+    
+    if len(history_df) > 0:
+        st.subheader(f"📈 Total de {len(history_df)} envios realizados")
+        
+        # Estatísticas
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            total_sent = history_df["sent"].sum()
+            st.metric("E-mails Enviados", total_sent)
+        
+        with col2:
+            total_failed = history_df["failed"].sum()
+            st.metric("Falhas", total_failed)
+        
+        with col3:
+            total_recipients = history_df["recipients_count"].sum()
+            st.metric("Total de Destinatários", total_recipients)
+        
+        with col4:
+            success_rate = (total_sent / (total_sent + total_failed) * 100) if (total_sent + total_failed) > 0 else 0
+            st.metric("Taxa de Sucesso", f"{success_rate:.1f}%")
+        
+        # Tabela de histórico
+        st.subheader("📋 Detalhes dos Envios")
+        
+        display_df = history_df[["date", "subject", "sender_name", "recipients_count", "sent", "failed"]].copy()
+        display_df["date"] = pd.to_datetime(display_df["date"]).dt.strftime("%d/%m/%Y %H:%M")
+        display_df.columns = ["Data", "Assunto", "Remetente", "Destinatários", "Enviados", "Falhas"]
+        
+        st.dataframe(display_df, use_container_width=True)
+        
+        # Gráfico de envios por dia
+        if len(history_df) > 1:
+            st.subheader("📈 Envios por Dia")
+            
+            history_df["date"] = pd.to_datetime(history_df["date"])
+            daily_stats = history_df.groupby(history_df["date"].dt.date).agg({
+                "sent": "sum",
+                "failed": "sum"
+            }).reset_index()
+            
+            st.line_chart(daily_stats.set_index("date"))
+    
+    else:
+        st.info("📭 Nenhum envio realizado ainda. Use a página \"Enviar E-mails\" para começar.")
+
+def como_usar_page():
+    st.header("📖 Como Usar o Sistema")
+    
+    st.markdown("""
+    <div class="feature-box">
+    <h3>🚀 Passo a Passo</h3>
+    
+    <h4>1. 📁 Importar Dados</h4>
+    <ul>
+    <li>Baixe a planilha oficial da Câmara dos Deputados ou Senado Federal</li>
+    <li>Faça upload do arquivo (.csv, .xls ou .xlsx)</li>
+    <li>O sistema processará automaticamente os dados</li>
+    </ul>
+    
+    <h4>2. 🔍 Filtrar Parlamentares</h4>
+    <ul>
+    <li>Use os filtros por nome, partido, estado ou cargo</li>
+    <li>Combine múltiplos filtros para refinar a busca</li>
+    <li>Veja quantos parlamentares correspondem aos critérios</li>
+    </ul>
+    
+    <h4>3. ✅ Selecionar Destinatários</h4>
+    <ul>
+    <li>Escolha individualmente os parlamentares desejados</li>
+    <li>Use "Selecionar Todos" para escolher todos os filtrados</li>
+    <li>Verifique se os parlamentares possuem e-mail válido (✅)</li>
+    </ul>
+    
+    <h4>4. ✉️ Compor Mensagem</h4>
+    <ul>
+    <li>Preencha o assunto e a mensagem</li>
+    <li>Use <code>{nome}</code> para personalizar com o nome do parlamentar</li>
+    <li>Configure suas credenciais de e-mail</li>
+    </ul>
+    
+    <h4>5. 📧 Enviar</h4>
+    <ul>
+    <li>Visualize a prévia antes de enviar</li>
+    <li>Clique em "Enviar E-mails" para iniciar o processo</li>
+    <li>Acompanhe o progresso e os resultados</li>
+    </ul>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div class="warning-box">
+    <h4>⚠️ Configuração de E-mail</h4>
+    
+    <h5>Gmail:</h5>
+    <ol>
+    <li>Ative a verificação em duas etapas</li>
+    <li>Gere uma senha de aplicativo em <a href="https://myaccount.google.com/apppasswords" target="_blank">myaccount.google.com/apppasswords</a></li>
+    <li>Use a senha gerada no campo "Senha do E-mail"</li>
+    </ol>
+    
+    <h5>Outlook/Hotmail:</h5>
+    <ol>
+    <li>Ative a verificação em duas etapas na conta Microsoft</li>
+    <li>Gere uma senha de aplicativo nas configurações de segurança</li>
+    <li>Use a senha gerada na aplicação</li>
+    </ol>
+    </div>
+    """, unsafe_allow_html=True)
+
+def sobre_page():
+    st.header("ℹ️ Sobre o Sistema")
+    
+    st.markdown("""
+    <div class="feature-box">
+    <h3>🏛️ Sistema de Contato com Parlamentares</h3>
+    
+    <p>Esta aplicação foi desenvolvida para facilitar a comunicação entre cidadãos e seus representantes eleitos, 
+    promovendo uma democracia mais participativa e transparente.</p>
+    
+    <h4>✨ Funcionalidades:</h4>
+    <ul>
+    <li>📤 Envio de e-mails personalizados em massa</li>
+    <li>📊 Processamento automático de planilhas oficiais</li>
+    <li>🔍 Sistema avançado de filtros</li>
+    <li>📈 Histórico completo de envios</li>
+    <li>🔒 Segurança e privacidade dos dados</li>
+    <li>📱 Interface responsiva e intuitiva</li>
+    </ul>
+    
+    <h4>🛠️ Tecnologias:</h4>
+    <ul>
+    <li><strong>Frontend:</strong> Streamlit</li>
+    <li><strong>Backend:</strong> Python</li>
+    <li><strong>Banco de Dados:</strong> SQLite</li>
+    <li><strong>Processamento:</strong> Pandas</li>
+    </ul>
+    
+    <h4>🌐 Compatibilidade:</h4>
+    <ul>
+    <li><strong>Provedores de E-mail:</strong> Gmail, Outlook, Yahoo, UOL, Terra, IG</li>
+    <li><strong>Formatos de Arquivo:</strong> .csv, .xls, .xlsx</li>
+    <li><strong>Navegadores:</strong> Chrome, Firefox, Safari, Edge</li>
+    </ul>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div class="success-box">
+    <h4>🔒 Segurança e Privacidade</h4>
+    <ul>
+    <li>Senhas de e-mail não são armazenadas</li>
+    <li>Dados dos parlamentares são públicos e oficiais</li>
+    <li>Histórico fica apenas no seu computador</li>
+    <li>Comunicação criptografada (HTTPS)</li>
+    </ul>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div class="warning-box">
+    <h4>📋 Uso Responsável</h4>
+    <p>Esta ferramenta deve ser usada de forma responsável para comunicação legítima com representantes eleitos:</p>
+    <ul>
+    <li>Não envie spam ou mensagens irrelevantes</li>
+    <li>Seja respeitoso na comunicação</li>
+    <li>Use apenas dados públicos oficiais</li>
+    <li>Respeite os limites dos provedores de e-mail</li>
+    <li>Mantenha o tom civilizado nas mensagens</li>
+    </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
+if __name__ == "__main__":
+    main()
+

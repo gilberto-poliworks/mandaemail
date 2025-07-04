@@ -291,7 +291,7 @@ def enviar_emails_page():
         if df is not None:
             st.success(f"✅ Planilha processada com sucesso! {len(df)} parlamentares carregados.")
             
-            # Garantir que a coluna 'email' exista, mesmo que vazia
+            # Garantir que a coluna \'email\' exista, mesmo que vazia
             if "email" not in df.columns:
                 df["email"] = None
 
@@ -342,12 +342,12 @@ def enviar_emails_page():
             st.subheader("3. ✅ Selecionar Destinatários")
             
             if len(filtered_df) > 0:
-                # Garante que a coluna 'email' existe antes de tentar acessá-la
+                # Garante que a coluna \'email\' exista antes de tentar acessá-la
                 # Esta verificação já é feita em process_spreadsheet, mas é bom ter uma redundância
                 if "email" not in filtered_df.columns:
                     filtered_df["email"] = None 
 
-                # Corrigido: Incluir 'email' na criação de selection_df
+                # Corrigido: Incluir \'email\' na criação de selection_df
                 selection_df = filtered_df[["nome", "partido", "uf", "cargo", "email"]].copy()
                 
                 selection_df["email_disponivel"] = selection_df["email"].notna() & (selection_df["email"] != "")

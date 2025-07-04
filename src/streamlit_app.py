@@ -337,20 +337,20 @@ def enviar_emails_page():
             
             st.info(f"📋 {len(filtered_df)} parlamentares encontrados com os filtros aplicados")
             
-            # --- REMOVIDO: DEBUG: Colunas em filtered_df antes da linha 336: --- 
-            # --- REMOVIDO: DEBUG: filtered_df.head() antes da linha 336: --- 
-
             # Seleção de parlamentares
             st.subheader("3. ✅ Selecionar Destinatários")
             
             if len(filtered_df) > 0:
                 # Adiciona a coluna de disponibilidade de email para exibição
                 # Validação de e-mail mais robusta
-                filtered_df["email_valido"] = filtered_df["email"].apply(lambda x: bool(re.match(r"[^@]+@[^@]+\.[^@]+", str(x))))
-                filtered_df["email_disponivel"] = filtered_df["email_valido"].map({True: "✅", False: "❌"})
+                # Verifica se a coluna 'email' existe e não está vazia antes de aplicar a regex
+                filtered_df["email_valido"] = filtered_df["email"].apply(lambda x: bool(re.match(r"[^@]+@[^@]+\.[^@]+", str(x))) if pd.notna(x) and str(x).strip() != "" else False)
+                
+                # Modificação aqui: exibir o email se válido, caso contrário '❌'
+                filtered_df["email_exibicao"] = filtered_df.apply(lambda row: row["email"] if row["email_valido"] else "❌", axis=1)
 
                 # Colunas a serem exibidas na tabela de seleção
-                display_cols = ["nome", "partido", "uf", "cargo", "email_disponivel"]
+                display_cols = ["nome", "partido", "uf", "cargo", "email_exibicao"]
                 
                 # Renomeia colunas para exibição
                 display_df = filtered_df[display_cols].rename(columns={
@@ -358,7 +358,7 @@ def enviar_emails_page():
                     "partido": "Partido",
                     "uf": "UF",
                     "cargo": "Cargo",
-                    "email_disponivel": "E-mail Válido"
+                    "email_exibicao": "E-mail Válido"
                 })
                 
                 # Adiciona uma coluna de seleção para o st.data_editor
@@ -367,6 +367,10 @@ def enviar_emails_page():
                     st.session_state.selected_rows_indices = []
 
                 # Preenche a coluna 'Selecionar' com base no estado da sessão
+                # Garante que apenas os índices do filtered_df atual sejam considerados
+                current_filtered_indices = filtered_df.index.tolist()
+                st.session_state.selected_rows_indices = [idx for idx in st.session_state.selected_rows_indices if idx in current_filtered_indices]
+
                 display_df["Selecionar"] = display_df.index.isin(st.session_state.selected_rows_indices)
 
                 # Exibe a tabela com checkboxes editáveis
@@ -386,6 +390,7 @@ def enviar_emails_page():
                 )
 
                 # Atualiza o estado da sessão com base nas seleções do data_editor
+                # Certifica-se de que estamos pegando os índices do DataFrame original (filtered_df)
                 st.session_state.selected_rows_indices = edited_df[edited_df["Selecionar"]].index.tolist()
                 
                 # Botões de Selecionar Todos e Limpar Seleção
@@ -399,6 +404,7 @@ def enviar_emails_page():
                         st.session_state.selected_rows_indices = []
                         st.rerun()
 
+                # Usar .loc para garantir que os índices do DataFrame original sejam usados
                 selected_parlamentares = filtered_df.loc[st.session_state.selected_rows_indices].to_dict("records")
 
                 if selected_parlamentares:
@@ -406,12 +412,13 @@ def enviar_emails_page():
                     st.success(f"✅ {len(selected_df)} parlamentares selecionados")
                     
                     # Verificar e-mails
+                    # A validação de e-mails agora usa a coluna 'email_valido' já criada
                     emails_validos = selected_df["email_valido"]
                     emails_count = emails_validos.sum()
                     
                     if emails_count == 0:
                         st.error("❌ Nenhum dos parlamentares selecionados possui e-mail válido.")
-                        return
+                        # Não retorna aqui para permitir que o usuário preencha os campos de e-mail
                     elif emails_count < len(selected_df):
                         st.warning(f"⚠️ Apenas {emails_count} dos {len(selected_df)} parlamentares selecionados possuem e-mail válido.")
                     

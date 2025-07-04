@@ -408,7 +408,7 @@ def enviar_emails_page():
                 selected_parlamentares = filtered_df.loc[st.session_state.selected_rows_indices].to_dict("records")
 
                 if selected_parlamentares:
-                    selected_df = filtered_df.loc[st.session_state.selected_rows_indices].copy()
+                    selected_df = pd.DataFrame(selected_parlamentares)
                     st.success(f"✅ {len(selected_df)} parlamentares selecionados")
                     
                     # Verificar e-mails

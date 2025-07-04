@@ -469,4 +469,4 @@ def como_usar_page():
     1.  **Importar Dados:** Faça o upload de uma planilha (.csv, .xls, .xlsx) contendo os dados dos parlamentares. O aplicativo tentará identificar automaticamente as colunas de nome, partido, UF, cargo e e-mail.
     2.  **Filtrar:** Use os filtros de nome, partido, estado e cargo para encontrar os parlamentares desejados.
     3.  **Selecionar Destinatários:** Selecione os parlamentares para os quais deseja enviar o e-mail. Você pode usar a opção 
-
+"""

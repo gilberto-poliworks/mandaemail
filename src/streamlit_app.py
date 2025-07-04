@@ -15,7 +15,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-st.write("Versão 1.0.1 - teste de indexação")
 
 # CSS customizado
 st.markdown("""
@@ -92,17 +91,23 @@ def process_spreadsheet(file):
             "nome": ["nome", "nome_parlamentar", "nome completo", "nome parlamentar"],
             "partido": ["partido", "sigla_partido", "siglapartido"],
             "uf": ["uf", "estado", "sigla_uf"],
-            "email": ["email", "e-mail", "email_gabinete"],
-            "cargo": ["cargo", "tipo"]
+            "email": ["email", "e-mail", "email_gabinete", "email_parlamentar", "email do parlamentar", "correio eletronico"],
+            "cargo": ["cargo", "tipo", "titular/suplente/efetivado"]
         }
         
         # Aplicar mapeamento
         for target_col, possible_cols in column_mapping.items():
+            found = False
             for col in possible_cols:
                 if col in df.columns:
                     df[target_col] = df[col]
+                    found = True
                     break
-            
+            if not found and target_col == "email": # Se email não for encontrado, adicione uma coluna vazia
+                df["email"] = None
+            elif not found and target_col == "cargo": # Se cargo não for encontrado, defina um padrão
+                df["cargo"] = "Parlamentar"
+        
         # Verificar se tem as colunas essenciais
         required_cols = ["nome", "partido", "uf"]
         missing_cols = [col for col in required_cols if col not in df.columns]
@@ -110,10 +115,6 @@ def process_spreadsheet(file):
         if missing_cols:
             st.error(f"Colunas obrigatórias não encontradas: {missing_cols}")
             return None
-        
-        # Adicionar cargo se não existir
-        if "cargo" not in df.columns:
-            df["cargo"] = "Deputado"  # Assumir deputado por padrão
         
         # Limpar dados
         df = df.dropna(subset=["nome"])
@@ -147,7 +148,8 @@ def init_database():
             sent INTEGER NOT NULL,
             failed INTEGER NOT NULL
         )
-    """)
+    """
+    )
     
     conn.commit()
     conn.close()
@@ -206,12 +208,12 @@ def send_emails(recipients, subject, message, sender_name, sender_email, sender_
                 # Corpo do e-mail
                 body = f"""Prezado(a) {recipient.get("nome", "")},
 
-    {personalized_message}
+{personalized_message}
 
-    Atenciosamente,
-    {sender_name}
-    {sender_email}
-    """
+Atenciosamente,
+{sender_name}
+{sender_email}
+"""
                 
                 msg.attach(MIMEText(body, "plain", "utf-8"))
                 
@@ -245,6 +247,7 @@ init_database()
 
 # Interface principal
 def main():
+    st.write("DEBUG: Aplicação iniciada.") # Adicione esta linha
     # Cabeçalho
     st.markdown("""
     <div class="main-header">
@@ -252,6 +255,7 @@ def main():
         <p>Envie mensagens personalizadas para deputados e senadores de forma simples e eficiente</p>
     </div>
     """, unsafe_allow_html=True)
+    st.write("DEBUG: Cabeçalho renderizado.") # Adicione esta linha
     
     # Sidebar para navegação
     st.sidebar.title("📋 Menu")
@@ -290,6 +294,10 @@ def enviar_emails_page():
         if df is not None:
             st.success(f"✅ Planilha processada com sucesso! {len(df)} parlamentares carregados.")
             
+            # Garantir que a coluna 'email' exista, mesmo que vazia
+            if "email" not in df.columns:
+                df["email"] = None
+
             # Filtros
             st.subheader("2. 🔍 Filtrar Parlamentares")
             
@@ -331,8 +339,17 @@ def enviar_emails_page():
             st.subheader("3. ✅ Selecionar Destinatários")
             
             if len(filtered_df) > 0:
+                # Adicionar depuração aqui
+                st.write(f"DEBUG: filtered_df columns: {filtered_df.columns.tolist()}")
+                st.write(f"DEBUG: filtered_df head:\n{filtered_df.head().to_string()}")
+
                 # Mostrar tabela com seleção
                 selection_df = filtered_df[["nome", "partido", "uf", "cargo"]].copy()
+                
+                # Garante que a coluna 'email' existe antes de tentar acessá-la
+                if "email" not in filtered_df.columns:
+                    filtered_df["email"] = None # Adiciona a coluna se não existir
+
                 selection_df["email_disponivel"] = filtered_df["email"].notna() & (filtered_df["email"] != "")
                 selection_df["email_disponivel"] = selection_df["email_disponivel"].map({True: "✅", False: "❌"})
                 
@@ -510,6 +527,7 @@ def como_usar_page():
     <li>Baixe a planilha oficial da Câmara dos Deputados ou Senado Federal</li>
     <li>Faça upload do arquivo (.csv, .xls ou .xlsx)</li>
     <li>O sistema processará automaticamente os dados</li>
+    <li>Verifique se os parlamentares possuem e-mail válido (✅)</li>
     </ul>
     
     <h4>2. 🔍 Filtrar Parlamentares</h4>

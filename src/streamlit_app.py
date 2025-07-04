@@ -468,5 +468,34 @@ def como_usar_page():
 
     1.  **Importar Dados:** Faça o upload de uma planilha (.csv, .xls, .xlsx) contendo os dados dos parlamentares. O aplicativo tentará identificar automaticamente as colunas de nome, partido, UF, cargo e e-mail.
     2.  **Filtrar:** Use os filtros de nome, partido, estado e cargo para encontrar os parlamentares desejados.
-    3.  **Selecionar Destinatários:** Selecione os parlamentares para os quais deseja enviar o e-mail. Você pode usar a opção 
-"""
+    3.  **Selecionar Destinatários:** Selecione os parlamentares para os quais deseja enviar o e-mail. Você pode usar a opção **"Selecionar Todos"** para selecionar todos os parlamentares filtrados ou selecionar individualmente.
+    4.  **Compor Mensagem:** Escreva o assunto e o corpo da mensagem. Use `{nome}` no corpo da mensagem para que o nome do parlamentar seja inserido automaticamente.
+    5.  **Prévia e Envio:** Visualize a prévia do e-mail e, quando estiver pronto, clique em **"Enviar E-mails"**.
+
+    **Observações:**
+
+    *   Para enviar e-mails, você precisará fornecer seu nome, e-mail e senha. Para serviços como Gmail e Outlook, pode ser necessário gerar uma **"senha de aplicativo"** específica para uso em aplicativos de terceiros, em vez da sua senha principal. Consulte a documentação do seu provedor de e-mail para mais detalhes.
+    *   O histórico de envios é armazenado localmente no navegador e será resetado se você limpar os dados do site ou se o Streamlit Cloud reiniciar a aplicação (o que acontece periodicamente).
+    """, unsafe_allow_html=True)
+
+def sobre_page():
+    st.header("ℹ️ Sobre")
+    st.markdown("""
+    Este aplicativo foi desenvolvido para facilitar a comunicação entre cidadãos e parlamentares, permitindo o envio de mensagens personalizadas de forma eficiente.
+
+    **Recursos:**
+
+    *   Importação de dados de planilhas (.xls, .xlsx, .csv)
+    *   Filtros por nome, partido, UF e cargo
+    *   Seleção de múltiplos destinatários
+    *   Personalização automática de e-mails
+    *   Suporte a diversos provedores de e-mail (Gmail, Outlook, Yahoo, etc.)
+    *   Histórico de envios
+
+    **Desenvolvido por:** Manus AI
+    **Versão:** 1.0
+    """, unsafe_allow_html=True)
+
+if __name__ == "__main__":
+    main()
+

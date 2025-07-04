@@ -414,7 +414,12 @@ def enviar_emails_page():
                     # Verificar e-mails
                     # A validação de e-mails agora usa a coluna 'email_valido' já criada
                     emails_validos = selected_df["email_valido"]
-                    emails_count = emails_validos.sum()elif emails_count < len(selected_df):
+                    emails_count = emails_validos.sum()
+                    
+                    if emails_count == 0:
+                        st.error("❌ Nenhum dos parlamentares selecionados possui e-mail válido.")
+                        # Não retorna aqui para permitir que o usuário preencha os campos de e-mail
+                    elif emails_count < len(selected_df):
                         st.warning(f"⚠️ Apenas {emails_count} dos {len(selected_df)} parlamentares selecionados possuem e-mail válido.")
                     
                     # Composição da mensagem

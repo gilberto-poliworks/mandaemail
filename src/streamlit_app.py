@@ -148,8 +148,7 @@ def init_database():
             sent INTEGER NOT NULL,
             failed INTEGER NOT NULL
         )
-    """
-    )
+    """)
     
     conn.commit()
     conn.close()
@@ -208,13 +207,13 @@ def send_emails(recipients, subject, message, sender_name, sender_email, sender_
                 # Corpo do e-mail
                 body = f"""Prezado(a) {recipient.get("nome", "")},
 
-{personalized_message}
+        {personalized_message}
 
-Atenciosamente,
-{sender_name}
-{sender_email}
-"""
-                
+        Atenciosamente,
+        {sender_name}
+        {sender_email}
+        """
+                        
                 msg.attach(MIMEText(body, "plain", "utf-8"))
                 
                 # Enviar
@@ -247,7 +246,6 @@ init_database()
 
 # Interface principal
 def main():
-    st.write("DEBUG: Aplicação iniciada.") # Adicione esta linha
     # Cabeçalho
     st.markdown("""
     <div class="main-header">
@@ -255,7 +253,6 @@ def main():
         <p>Envie mensagens personalizadas para deputados e senadores de forma simples e eficiente</p>
     </div>
     """, unsafe_allow_html=True)
-    st.write("DEBUG: Cabeçalho renderizado.") # Adicione esta linha
     
     # Sidebar para navegação
     st.sidebar.title("📋 Menu")
@@ -335,22 +332,25 @@ def enviar_emails_page():
             
             st.info(f"📋 {len(filtered_df)} parlamentares encontrados com os filtros aplicados")
             
+            # --- INÍCIO DA DEPURACÃO --- 
+            st.write("DEBUG: Colunas em filtered_df antes da linha 336:", filtered_df.columns.tolist())
+            st.write("DEBUG: filtered_df.head() antes da linha 336:")
+            st.dataframe(filtered_df.head())
+            # --- FIM DA DEPURACÃO --- 
+
             # Seleção de parlamentares
             st.subheader("3. ✅ Selecionar Destinatários")
             
             if len(filtered_df) > 0:
-                # Adicionar depuração aqui
-                st.write(f"DEBUG: filtered_df columns: {filtered_df.columns.tolist()}")
-                st.write(f"DEBUG: filtered_df head:\n{filtered_df.head().to_string()}")
-
-                # Mostrar tabela com seleção
-                selection_df = filtered_df[["nome", "partido", "uf", "cargo"]].copy()
-                
                 # Garante que a coluna 'email' existe antes de tentar acessá-la
+                # Esta verificação já é feita em process_spreadsheet, mas é bom ter uma redundância
                 if "email" not in filtered_df.columns:
-                    filtered_df["email"] = None # Adiciona a coluna se não existir
+                    filtered_df["email"] = None 
 
-                selection_df["email_disponivel"] = filtered_df["email"].notna() & (filtered_df["email"] != "")
+                # Corrigido: Incluir 'email' na criação de selection_df
+                selection_df = filtered_df[["nome", "partido", "uf", "cargo", "email"]].copy()
+                
+                selection_df["email_disponivel"] = selection_df["email"].notna() & (selection_df["email"] != "")
                 selection_df["email_disponivel"] = selection_df["email_disponivel"].map({True: "✅", False: "❌"})
                 
                 selected_indices = st.multiselect(
@@ -436,213 +436,37 @@ def enviar_emails_page():
                                     <div class="success-box">
                                     <h4>✅ Envio Concluído!</h4>
                                     <ul>
-                                    <li><strong>Enviados:</strong> {sent}</li>
-                                    <li><strong>Falhas:</strong> {failed}</li>
-                                    <li><strong>Total:</strong> {sent + failed}</li>
+                                        <li>E-mails enviados com sucesso: {sent}</li>
+                                        <li>E-mails com falha: {failed}</li>
                                     </ul>
                                     </div>
                                     """, unsafe_allow_html=True)
                                 else:
-                                    st.error("❌ Nenhum e-mail foi enviado. Verifique suas credenciais e configurações.")
-                    
-                    else:
-                        st.info("👆 Selecione pelo menos um parlamentar para continuar.")
-                
-                else:
-                    st.warning("⚠️ Nenhum parlamentar encontrado com os filtros aplicados. Tente ajustar os critérios de busca.")
-        
-        else:
-            st.info("👆 Faça upload de uma planilha para começar.")
-            
-            st.markdown("""
-            <div class="feature-box">
-            <h4>📋 Onde obter as planilhas oficiais:</h4>
-            <ul>
-            <li><strong>Câmara dos Deputados:</strong> <a href="https://www.camara.leg.br/internet/deputado/deputado.xls" target="_blank">deputado.xls</a></li>
-            <li><strong>Senado Federal:</strong> Dados disponíveis em <a href="https://www12.senado.leg.br/dados-abertos" target="_blank">Dados Abertos do Senado</a></li>
-            </ul>
-            </div>
-            """, unsafe_allow_html=True)
+                                    st.error("❌ Falha no envio de e-mails. Verifique suas credenciais e tente novamente.")
+                                
+                                # Atualizar histórico
+                                st.subheader("Histórico de Envios Recente:")
+                                st.dataframe(get_email_history())
+
 
 def historico_page():
     st.header("📊 Histórico de Envios")
+    st.write("Aqui você pode visualizar o histórico de todos os e-mails enviados.")
     
     history_df = get_email_history()
-    
-    if len(history_df) > 0:
-        st.subheader(f"📈 Total de {len(history_df)} envios realizados")
-        
-        # Estatísticas
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            total_sent = history_df["sent"].sum()
-            st.metric("E-mails Enviados", total_sent)
-        
-        with col2:
-            total_failed = history_df["failed"].sum()
-            st.metric("Falhas", total_failed)
-        
-        with col3:
-            total_recipients = history_df["recipients_count"].sum()
-            st.metric("Total de Destinatários", total_recipients)
-        
-        with col4:
-            success_rate = (total_sent / (total_sent + total_failed) * 100) if (total_sent + total_failed) > 0 else 0
-            st.metric("Taxa de Sucesso", f"{success_rate:.1f}%")
-        
-        # Tabela de histórico
-        st.subheader("📋 Detalhes dos Envios")
-        
-        display_df = history_df[["date", "subject", "sender_name", "recipients_count", "sent", "failed"]].copy()
-        display_df["date"] = pd.to_datetime(display_df["date"]).dt.strftime("%d/%m/%Y %H:%M")
-        display_df.columns = ["Data", "Assunto", "Remetente", "Destinatários", "Enviados", "Falhas"]
-        
-        st.dataframe(display_df, use_container_width=True)
-        
-        # Gráfico de envios por dia
-        if len(history_df) > 1:
-            st.subheader("📈 Envios por Dia")
-            
-            history_df["date"] = pd.to_datetime(history_df["date"])
-            daily_stats = history_df.groupby(history_df["date"].dt.date).agg({
-                "sent": "sum",
-                "failed": "sum"
-            }).reset_index()
-            
-            st.line_chart(daily_stats.set_index("date"))
-    
+    if not history_df.empty:
+        st.dataframe(history_df)
     else:
-        st.info("📭 Nenhum envio realizado ainda. Use a página \"Enviar E-mails\" para começar.")
+        st.info("Nenhum e-mail foi enviado ainda.")
 
 def como_usar_page():
-    st.header("📖 Como Usar o Sistema")
-    
+    st.header("📖 Como Usar")
     st.markdown("""
-    <div class="feature-box">
-    <h3>🚀 Passo a Passo</h3>
-    
-    <h4>1. 📁 Importar Dados</h4>
-    <ul>
-    <li>Baixe a planilha oficial da Câmara dos Deputados ou Senado Federal</li>
-    <li>Faça upload do arquivo (.csv, .xls ou .xlsx)</li>
-    <li>O sistema processará automaticamente os dados</li>
-    <li>Verifique se os parlamentares possuem e-mail válido (✅)</li>
-    </ul>
-    
-    <h4>2. 🔍 Filtrar Parlamentares</h4>
-    <ul>
-    <li>Use os filtros por nome, partido, estado ou cargo</li>
-    <li>Combine múltiplos filtros para refinar a busca</li>
-    <li>Veja quantos parlamentares correspondem aos critérios</li>
-    </ul>
-    
-    <h4>3. ✅ Selecionar Destinatários</h4>
-    <ul>
-    <li>Escolha individualmente os parlamentares desejados</li>
-    <li>Use "Selecionar Todos" para escolher todos os filtrados</li>
-    <li>Verifique se os parlamentares possuem e-mail válido (✅)</li>
-    </ul>
-    
-    <h4>4. ✉️ Compor Mensagem</h4>
-    <ul>
-    <li>Preencha o assunto e a mensagem</li>
-    <li>Use <code>{nome}</code> para personalizar com o nome do parlamentar</li>
-    <li>Configure suas credenciais de e-mail</li>
-    </ul>
-    
-    <h4>5. 📧 Enviar</h4>
-    <ul>
-    <li>Visualize a prévia antes de enviar</li>
-    <li>Clique em "Enviar E-mails" para iniciar o processo</li>
-    <li>Acompanhe o progresso e os resultados</li>
-    </ul>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("""
-    <div class="warning-box">
-    <h4>⚠️ Configuração de E-mail</h4>
-    
-    <h5>Gmail:</h5>
-    <ol>
-    <li>Ative a verificação em duas etapas</li>
-    <li>Gere uma senha de aplicativo em <a href="https://myaccount.google.com/apppasswords" target="_blank">myaccount.google.com/apppasswords</a></li>
-    <li>Use a senha gerada no campo "Senha do E-mail"</li>
-    </ol>
-    
-    <h5>Outlook/Hotmail:</h5>
-    <ol>
-    <li>Ative a verificação em duas etapas na conta Microsoft</li>
-    <li>Gere uma senha de aplicativo nas configurações de segurança</li>
-    <li>Use a senha gerada na aplicação</li>
-    </ol>
-    </div>
-    """, unsafe_allow_html=True)
+    Este aplicativo permite que você envie e-mails personalizados para parlamentares brasileiros.
 
-def sobre_page():
-    st.header("ℹ️ Sobre o Sistema")
-    
-    st.markdown("""
-    <div class="feature-box">
-    <h3>🏛️ Sistema de Contato com Parlamentares</h3>
-    
-    <p>Esta aplicação foi desenvolvida para facilitar a comunicação entre cidadãos e seus representantes eleitos, 
-    promovendo uma democracia mais participativa e transparente.</p>
-    
-    <h4>✨ Funcionalidades:</h4>
-    <ul>
-    <li>📤 Envio de e-mails personalizados em massa</li>
-    <li>📊 Processamento automático de planilhas oficiais</li>
-    <li>🔍 Sistema avançado de filtros</li>
-    <li>📈 Histórico completo de envios</li>
-    <li>🔒 Segurança e privacidade dos dados</li>
-    <li>📱 Interface responsiva e intuitiva</li>
-    </ul>
-    
-    <h4>🛠️ Tecnologias:</h4>
-    <ul>
-    <li><strong>Frontend:</strong> Streamlit</li>
-    <li><strong>Backend:</strong> Python</li>
-    <li><strong>Banco de Dados:</strong> SQLite</li>
-    <li><strong>Processamento:</strong> Pandas</li>
-    </ul>
-    
-    <h4>🌐 Compatibilidade:</h4>
-    <ul>
-    <li><strong>Provedores de E-mail:</strong> Gmail, Outlook, Yahoo, UOL, Terra, IG</li>
-    <li><strong>Formatos de Arquivo:</strong> .csv, .xls, .xlsx</li>
-    <li><strong>Navegadores:</strong> Chrome, Firefox, Safari, Edge</li>
-    </ul>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("""
-    <div class="success-box">
-    <h4>🔒 Segurança e Privacidade</h4>
-    <ul>
-    <li>Senhas de e-mail não são armazenadas</li>
-    <li>Dados dos parlamentares são públicos e oficiais</li>
-    <li>Histórico fica apenas no seu computador</li>
-    <li>Comunicação criptografada (HTTPS)</li>
-    </ul>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("""
-    <div class="warning-box">
-    <h4>📋 Uso Responsável</h4>
-    <p>Esta ferramenta deve ser usada de forma responsável para comunicação legítima com representantes eleitos:</p>
-    <ul>
-    <li>Não envie spam ou mensagens irrelevantes</li>
-    <li>Seja respeitoso na comunicação</li>
-    <li>Use apenas dados públicos oficiais</li>
-    <li>Respeite os limites dos provedores de e-mail</li>
-    <li>Mantenha o tom civilizado nas mensagens</li>
-    </ul>
-    </div>
-    """, unsafe_allow_html=True)
+    **Passo a passo:**
 
-if __name__ == "__main__":
-    main()
+    1.  **Importar Dados:** Faça o upload de uma planilha (.csv, .xls, .xlsx) contendo os dados dos parlamentares. O aplicativo tentará identificar automaticamente as colunas de nome, partido, UF, cargo e e-mail.
+    2.  **Filtrar:** Use os filtros de nome, partido, estado e cargo para encontrar os parlamentares desejados.
+    3.  **Selecionar Destinatários:** Selecione os parlamentares para os quais deseja enviar o e-mail. Você pode usar a opção 
 

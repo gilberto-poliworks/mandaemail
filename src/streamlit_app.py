@@ -7,6 +7,7 @@ import io
 import sqlite3
 from datetime import datetime
 import os
+import re
 
 # Configuração da página
 st.set_page_config(
@@ -336,31 +337,23 @@ def enviar_emails_page():
             
             st.info(f"📋 {len(filtered_df)} parlamentares encontrados com os filtros aplicados")
             
-            # --- INÍCIO DA DEPURACÃO --- 
-            st.write("DEBUG: Colunas em filtered_df antes da linha 336:", filtered_df.columns.tolist())
-            st.write("DEBUG: filtered_df.head() antes da linha 336:")
-            st.dataframe(filtered_df.head())
-            # --- FIM DA DEPURACÃO --- 
+            # --- REMOVIDO: DEBUG: Colunas em filtered_df antes da linha 336: --- 
+            # --- REMOVIDO: DEBUG: filtered_df.head() antes da linha 336: --- 
 
             # Seleção de parlamentares
             st.subheader("3. ✅ Selecionar Destinatários")
             
             if len(filtered_df) > 0:
-                # Colunas a serem exibidas na tabela de seleção
-                display_cols = ["nome", "partido", "uf", "cargo", "email"]
-                # Garante que todas as colunas de display existam no filtered_df
-                for col in display_cols:
-                    if col not in filtered_df.columns:
-                        filtered_df[col] = None # Adiciona a coluna se não existir
+                # Adiciona a coluna de disponibilidade de email para exibição
+                # Validação de e-mail mais robusta
+                filtered_df["email_valido"] = filtered_df["email"].apply(lambda x: bool(re.match(r"[^@]+@[^@]+\.[^@]+", str(x))))
+                filtered_df["email_disponivel"] = filtered_df["email_valido"].map({True: "✅", False: "❌"})
 
-                # Cria a selection_df com as colunas desejadas
-                selection_df = filtered_df[display_cols].copy()
-                
-                selection_df["email_disponivel"] = selection_df["email"].notna() & (selection_df["email"] != "")
-                selection_df["email_disponivel"] = selection_df["email_disponivel"].map({True: "✅", False: "❌"})
+                # Colunas a serem exibidas na tabela de seleção
+                display_cols = ["nome", "partido", "uf", "cargo", "email_disponivel"]
                 
                 # Renomeia colunas para exibição
-                selection_df = selection_df.rename(columns={
+                display_df = filtered_df[display_cols].rename(columns={
                     "nome": "Nome",
                     "partido": "Partido",
                     "uf": "UF",
@@ -368,65 +361,52 @@ def enviar_emails_page():
                     "email_disponivel": "E-mail Válido"
                 })
                 
-                # Remove a coluna de email original da exibição se não for mais necessária
-                if "email" in selection_df.columns:
-                    selection_df = selection_df.drop(columns=["email"])
+                # Adiciona uma coluna de seleção para o st.data_editor
+                # Inicializa o estado da seleção se não existir
+                if 'selected_rows_indices' not in st.session_state:
+                    st.session_state.selected_rows_indices = []
 
-                # Exibe a tabela com checkboxes
-                st.dataframe(selection_df, use_container_width=True, hide_index=True)
+                # Preenche a coluna 'Selecionar' com base no estado da sessão
+                display_df["Selecionar"] = display_df.index.isin(st.session_state.selected_rows_indices)
 
-                # Gerencia a seleção com checkboxes
-                selected_parlamentares = []
-                # Adiciona um estado para controlar a seleção de todos
-                if 'select_all_checkbox' not in st.session_state:
-                    st.session_state.select_all_checkbox = False
+                # Exibe a tabela com checkboxes editáveis
+                edited_df = st.data_editor(
+                    display_df,
+                    column_config={
+                        "Selecionar": st.column_config.CheckboxColumn(
+                            "Selecionar",
+                            help="Selecione os parlamentares para enviar e-mail",
+                            default=False,
+                        )
+                    },
+                    disabled=["Nome", "Partido", "UF", "Cargo", "E-mail Válido"],
+                    hide_index=True,
+                    use_container_width=True,
+                    key="parlamentares_editor"
+                )
 
+                # Atualiza o estado da sessão com base nas seleções do data_editor
+                st.session_state.selected_rows_indices = edited_df[edited_df["Selecionar"]].index.tolist()
+                
+                # Botões de Selecionar Todos e Limpar Seleção
                 col_select_all, col_clear_selection = st.columns([0.2, 0.8])
-
                 with col_select_all:
-                    select_all_button = st.checkbox("Selecionar Todos", value=st.session_state.select_all_checkbox, key="master_checkbox")
-                    if select_all_button:
-                        st.session_state.select_all_checkbox = True
-                    else:
-                        st.session_state.select_all_checkbox = False
-
+                    if st.button("Selecionar Todos"):
+                        st.session_state.selected_rows_indices = filtered_df.index.tolist()
+                        st.rerun()
                 with col_clear_selection:
                     if st.button("Limpar Seleção"):
-                        st.session_state.select_all_checkbox = False
-                        st.session_state.selected_rows = [] # Limpa as linhas selecionadas
+                        st.session_state.selected_rows_indices = []
                         st.rerun()
 
-                # Inicializa st.session_state.selected_rows se não existir
-                if 'selected_rows' not in st.session_state:
-                    st.session_state.selected_rows = []
-
-                # Se o botão 'Selecionar Todos' foi clicado, preenche selected_rows
-                if st.session_state.select_all_checkbox:
-                    st.session_state.selected_rows = list(range(len(filtered_df)))
-
-                # Cria checkboxes individuais para cada parlamentar
-                for i, row in filtered_df.iterrows():
-                    is_selected = i in st.session_state.selected_rows
-                    checkbox_key = f"checkbox_{i}"
-                    # Adiciona um callback para atualizar selected_rows quando o checkbox é clicado
-                    if st.checkbox(f"{row["nome"]} - {row["partido"]}/{row["uf"]}", value=is_selected, key=checkbox_key, on_change=lambda i=i: update_selected_rows(i)):
-                        pass # A atualização é feita no callback
-
-                def update_selected_rows(index):
-                    if index in st.session_state.selected_rows:
-                        st.session_state.selected_rows.remove(index)
-                    else:
-                        st.session_state.selected_rows.append(index)
-
-                selected_parlamentares = filtered_df.iloc[st.session_state.selected_rows].to_dict('records')
+                selected_parlamentares = filtered_df.loc[st.session_state.selected_rows_indices].to_dict("records")
 
                 if selected_parlamentares:
                     selected_df = pd.DataFrame(selected_parlamentares)
                     st.success(f"✅ {len(selected_df)} parlamentares selecionados")
                     
                     # Verificar e-mails
-                    # A validação de e-mails deve ser feita na coluna 'email' que já foi mapeada
-                    emails_validos = selected_df["email"].apply(lambda x: isinstance(x, str) and "@" in x and "." in x)
+                    emails_validos = selected_df["email_valido"]
                     emails_count = emails_validos.sum()
                     
                     if emails_count == 0:

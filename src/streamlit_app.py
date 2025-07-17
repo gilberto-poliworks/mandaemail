@@ -92,7 +92,7 @@ def process_spreadsheet(file):
             "nome": ["nome", "nome_parlamentar", "nome completo", "nome parlamentar"],
             "partido": ["partido", "sigla_partido", "siglapartido"],
             "uf": ["uf", "estado", "sigla_uf"],
-            "email": ["email", "e-mail", "email_gabinete", "email_parlamentar", "email do parlamentar", "correio eletronico"],
+            "email": ["email", "e-mail", "email_gabinete", "email_parlamentar", "email do parlamentar", "correio eletronico", "correio eletrônico"],
             "cargo": ["cargo", "tipo", "titular/suplente/efetivado"]
         }
         
